@@ -4,7 +4,22 @@
 
 HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
-export LD_LIBRARY_PATH="${HERE}/lib:${LD_LIBRARY_PATH}"
+# Steam Game Mode exports LD_LIBRARY_PATH with Steam's runtime dirs (~/.local/share/Steam/steamrtarm64, ...). Observed
+# 2026-10-12 on the Thor: with those dirs on the path, ldd resolves libavcodec.so.62 / libavutil.so.60 / libswscale.so.9
+# to Steam's copies. Steam's libavcodec.so.62 contains no hevc_v4l2m2m / h264_v4l2m2m strings; /lib64/libavcodec.so.62
+# does. In the Game Mode session log both *_DECODER_HINT lookups failed with no FFmpeg output. Drop Steam's dirs so
+# Artemis binds to the system FFmpeg, same as when launched from SSH.
+_ld_clean=""
+_ifs_old="$IFS"; IFS=:
+for _d in $LD_LIBRARY_PATH; do
+    case "$_d" in
+        */.local/share/Steam|*/.local/share/Steam/*) ;;
+        "") ;;
+        *) _ld_clean="${_ld_clean:+${_ld_clean}:}${_d}" ;;
+    esac
+done
+IFS="$_ifs_old"
+export LD_LIBRARY_PATH="${HERE}/lib${_ld_clean:+:${_ld_clean}}"
 export XDG_DATA_DIRS="${HERE}/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 
 # Hardware decode on the Thor's Qualcomm Iris decoder (/dev/video0, driver iris_driver).

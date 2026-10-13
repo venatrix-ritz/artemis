@@ -47,4 +47,10 @@ unset GAMESCOPE_WAYLAND_DISPLAY
 # SDL video driver for Gamescope nested X11
 export SDL_VIDEODRIVER=x11
 
+# Gamescope's WSI layer hooks Vulkan swapchains when ENABLE_GAMESCOPE_WSI=1,
+# logging repeated swapchain recreation messages during Artemis's format probes in ffmpeg.cpp.
+# Since Artemis uses Gamescope's managed X11 display, disable the Gamescope WSI bypass layer.
+unset ENABLE_GAMESCOPE_WSI
+export DISABLE_GAMESCOPE_WSI=1
+
 exec "${HERE}/bin/artemis.bin" "$@"

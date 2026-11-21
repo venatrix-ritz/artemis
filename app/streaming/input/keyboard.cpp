@@ -181,6 +181,32 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
         return;
     }
 
+    // AYN Thor: the AYN key arrives as F24; send it as Guide because Steam keeps the pad's own Guide button.
+    if (event->keysym.scancode == SDL_SCANCODE_F24) {
+        bool down = event->state == SDL_PRESSED;
+        for (int i = 0; i < MAX_GAMEPADS; i++) {
+            if (m_GamepadState[i].controller == nullptr) {
+                continue;
+            }
+            if (down) {
+                m_GamepadState[i].buttons |= SPECIAL_FLAG;
+            }
+            else {
+                m_GamepadState[i].buttons &= ~SPECIAL_FLAG;
+            }
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                        "F24 %s: Guide sent on gamepad %d",
+                        down ? "down" : "up",
+                        m_GamepadState[i].index);
+            sendGamepadState(&m_GamepadState[i]);
+            return;
+        }
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "F24 %s: no gamepad attached to carry Guide",
+                    down ? "down" : "up");
+        return;
+    }
+
     // Check for our special key combos
     if ((event->state == SDL_PRESSED) &&
             (event->keysym.mod & KMOD_CTRL) &&
